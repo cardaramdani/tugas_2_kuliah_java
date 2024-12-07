@@ -1,20 +1,13 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+// File: Main.java
 import java.util.Scanner;
 
 public class Main {
-    private static final ArrayList<Menu> menuList = new ArrayList<>();
-    private static final ArrayList<String> pesanan = new ArrayList<>();
-    private static final ArrayList<Integer> jumlahPesanan = new ArrayList<>();
-    private static final Map<String, String> users = new HashMap<>();
-
-    private static boolean isLoggedIn = false;
+    final private static Menu menuRestoran = new Menu();
+    private static Pesanan pesananPelanggan = new Pesanan();
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         inisialisasiMenu();
-        inisialisasiUsers();
 
         while (true) {
             System.out.println("Menu Utama:");
@@ -26,15 +19,9 @@ public class Main {
 
             switch (pilihan) {
                 case "1" -> menuPemesanan(scanner);
-                case "2" -> {
-                    if (isLoggedIn || login(scanner)) {
-                        menuPengelolaan(scanner);
-                    } else {
-                        System.out.println("Login gagal. Silakan coba lagi.");
-                    }
-                }
+                case "2" -> menuPengelolaan(scanner);
                 case "3" -> {
-                    System.out.println("Terima kasih! Sampai jumpa lagi dikedai carda ramdani.");
+                    System.out.println("Terima kasih! Sampai jumpa lagi di kedai.");
                     return;
                 }
                 default -> System.out.println("Pilihan tidak valid. Silakan coba lagi.");
@@ -43,147 +30,41 @@ public class Main {
     }
 
     private static void inisialisasiMenu() {
-        menuList.add(new Menu("Nasi Padang", 25000, "Makanan"));
-        menuList.add(new Menu("Ayam Goreng", 20000, "Makanan"));
-        menuList.add(new Menu("Sate Ayam", 30000, "Makanan"));
-        menuList.add(new Menu("Soto Ayam", 22000, "Makanan"));
-        
-        menuList.add(new Menu("Es Teh", 5000, "Minuman"));
-        menuList.add(new Menu("Jus Jeruk", 15000, "Minuman"));
-        menuList.add(new Menu("Kopi", 10000, "Minuman"));
-        menuList.add(new Menu("Air Mineral", 3000, "Minuman"));
-    }
+        menuRestoran.tambahItem(new Makanan("Nasi Padang", 25000, "Makanan", "Utama"));
+        menuRestoran.tambahItem(new Makanan("Ayam Goreng", 20000, "Makanan", "Lauk"));
+        menuRestoran.tambahItem(new Makanan("Sate Ayam", 30000, "Makanan", "Lauk"));
+        menuRestoran.tambahItem(new Makanan("Soto Ayam", 10000, "Makanan", "Lauk"));
 
-    private static void inisialisasiUsers() {
-        // Pengguna yang diizinkan untuk mengakses manajemen menu
-        users.put("admin", "password123");
-    }
-
-    private static boolean login(Scanner scanner) {
-        System.out.print("Masukkan username: ");
-        String username = scanner.nextLine();
-        System.out.print("Masukkan password: ");
-        String password = scanner.nextLine();
-
-        if (users.containsKey(username) && users.get(username).equals(password)) {
-            isLoggedIn = true;
-            System.out.println("Login berhasil.");
-            return true;
-        } else {
-            System.out.println("Username atau password salah.");
-            return false;
-        }
+        menuRestoran.tambahItem(new Minuman("Es Teh", 5000, "Minuman", "Dingin"));
+        menuRestoran.tambahItem(new Minuman("Kopi", 10000, "Minuman", "Panas"));
+        menuRestoran.tambahItem(new Diskon("Diskon Spesial", 0, "Diskon", 10));
     }
 
     private static void menuPemesanan(Scanner scanner) {
-        tampilkanMenu();
-        System.out.println("\nMasukkan pesanan Anda (tulis dengan format format: Nama Menu = Jumlah pesanan). Ketik 'selesai' untuk menyelesaikan pesanan:");
+        menuRestoran.tampilkanMenu();
+        System.out.println("\nMasukkan pesanan Anda (Nama Menu). Ketik 'selesai' untuk menyelesaikan pesanan:");
         while (true) {
             String input = scanner.nextLine();
             if (input.equalsIgnoreCase("selesai")) {
                 break;
             }
-            String[] parts = input.split(" = ");
-            if (parts.length == 2) {
-                String namaMenu = parts[0];
-                try {
-                    int jumlah = Integer.parseInt(parts[1]);
-                    if (isValidMenu(namaMenu)) {
-                        pesanan.add(namaMenu);
-                        jumlahPesanan.add(jumlah);
-                    } else {
-                        System.out.println("Menu tidak ditemukan. Silakan coba lagi.");
-                    }
-                } catch (NumberFormatException e) {
-                    System.out.println("Jumlah harus berupa angka. Silakan coba lagi.");
-                }
+
+            MenuItem item = menuRestoran.cariMenu(input);
+            if (item != null) {
+                pesananPelanggan.tambahPesanan(item);
             } else {
-                System.out.println("Format input salah. Silakan coba lagi.");
+                System.out.println("Menu tidak ditemukan. Silakan coba lagi.");
             }
         }
 
-        double totalBiaya = hitungTotalBiaya();
-        double[] diskonDanTotalSetelahDiskon = hitungDiskon(totalBiaya);
-        double totalSetelahDiskon = diskonDanTotalSetelahDiskon[1];
-        double totalDenganPajakDanPelayanan = totalSetelahDiskon * 1.1 + 20000;
+        double total = pesananPelanggan.hitungTotal();
+        double[] hasilDiskon = hitungDiskon(total);
+        double totalDiskon = hasilDiskon[0];
+        double totalSetelahDiskon = hasilDiskon[1];
+        double totalDenganPajakDanPelayanan = totalSetelahDiskon + (totalSetelahDiskon * 0.1) + 2000;
 
-        cetakStruk(totalDenganPajakDanPelayanan, totalBiaya, diskonDanTotalSetelahDiskon[0]);
-        pesanan.clear();
-        jumlahPesanan.clear();
-    }
-
-    private static boolean isValidMenu(String namaMenu) {
-        for (Menu menu : menuList) {
-            if (menu.getNama().equalsIgnoreCase(namaMenu)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static void tampilkanMenu() {
-        System.out.println("Menu Restoran:");
-        System.out.println("Makanan:");
-        for (Menu menu : menuList) {
-            if (menu.getKategori().equalsIgnoreCase("Makanan")) {
-                System.out.println(menu.getNama() + " - Rp " + menu.getHarga());
-            }
-        }
-        System.out.println("Minuman:");
-        for (Menu menu : menuList) {
-            if (menu.getKategori().equalsIgnoreCase("Minuman")) {
-                System.out.println(menu.getNama() + " - Rp " + menu.getHarga());
-            }
-        }
-    }
-
-    private static double hitungTotalBiaya() {
-        double total = 0;
-        for (int i = 0; i < pesanan.size(); i++) {
-            for (Menu menu : menuList) {
-                if (menu.getNama().equalsIgnoreCase(pesanan.get(i))) {
-                    total += menu.getHarga() * jumlahPesanan.get(i);
-                }
-            }
-        }
-        return total;
-    }
-
-    private static double[] hitungDiskon(double totalBiaya) {
-        double diskon = 0;
-        if (totalBiaya > 100000) {
-            diskon = totalBiaya * 0.1;
-            totalBiaya *= 0.9;
-        } else if (totalBiaya > 50000) {
-            for (int i = 0; i < pesanan.size(); i++) {
-                for (Menu menu : menuList) {
-                    if (menu.getNama().equalsIgnoreCase(pesanan.get(i)) && menu.getKategori().equalsIgnoreCase("Minuman")) {
-                        diskon = menu.getHarga();
-                        totalBiaya -= menu.getHarga();
-                        break;
-                    }
-                }
-            }
-        }
-        return new double[]{diskon, totalBiaya};
-    }
-
-    private static void cetakStruk(double totalDenganPajakDanPelayanan, double totalBiaya, double totalDiskon) {
-        System.out.println("\nStruk Pesanan:");
-        System.out.println("Item Pesanan:");
-        for (int i = 0; i < pesanan.size(); i++) {
-            for (Menu menu : menuList) {
-                if (menu.getNama().equalsIgnoreCase(pesanan.get(i))) {
-                    System.out.println(pesanan.get(i) + " x " + jumlahPesanan.get(i) + " = Rp " + (menu.getHarga() * jumlahPesanan.get(i)));
-                }
-            }
-        }
-        System.out.println("Total Biaya: Rp " + totalBiaya);
-        System.out.println("Total Diskon: Rp " + totalDiskon);
-        System.out.println("Total Setelah Diskon: Rp " + (totalBiaya - totalDiskon));
-        System.out.println("Pajak (10%): Rp " + ((totalBiaya - totalDiskon) * 0.1));
-        System.out.println("Biaya Pelayanan: Rp 20000");
-        System.out.println("Total Bayar: Rp " + totalDenganPajakDanPelayanan);
+        cetakStruk(totalDenganPajakDanPelayanan, total, totalDiskon);
+        pesananPelanggan = new Pesanan(); // Reset pesanan setelah selesai
     }
 
     private static void menuPengelolaan(Scanner scanner) {
@@ -213,59 +94,104 @@ public class Main {
         String nama = scanner.nextLine();
         System.out.print("Masukkan harga menu baru: ");
         double harga = scanner.nextDouble();
-        scanner.nextLine();  // clear the buffer
-        System.out.print("Masukkan kategori menu baru (Makanan/Minuman): ");
+        scanner.nextLine(); // clear the buffer
+        System.out.print("Masukkan kategori menu baru (Makanan/Minuman/Diskon): ");
         String kategori = scanner.nextLine();
 
-        menuList.add(new Menu(nama, harga, kategori));
+        if (kategori.equalsIgnoreCase("Makanan")) {
+            System.out.print("Masukkan jenis makanan: ");
+            String jenisMakanan = scanner.nextLine();
+            menuRestoran.tambahItem(new Makanan(nama, harga, kategori, jenisMakanan));
+        } else if (kategori.equalsIgnoreCase("Minuman")) {
+            System.out.print("Masukkan jenis minuman: ");
+            String jenisMinuman = scanner.nextLine();
+            menuRestoran.tambahItem(new Minuman(nama, harga, kategori, jenisMinuman));
+        } else if (kategori.equalsIgnoreCase("Diskon")) {
+            System.out.print("Masukkan persentase diskon: ");
+            double diskon = scanner.nextDouble();
+            scanner.nextLine(); // clear the buffer
+            menuRestoran.tambahItem(new Diskon(nama, harga, kategori, diskon));
+        } else {
+            System.out.println("Kategori tidak valid.");
+        }
+
         System.out.println("Menu berhasil ditambahkan.");
     }
 
     private static void ubahHargaMenu(Scanner scanner) {
-        tampilkanMenu();
+        menuRestoran.tampilkanMenu();
         System.out.print("Masukkan nama menu yang ingin diubah harganya: ");
         String nama = scanner.nextLine();
 
-        for (Menu menu : menuList) {
-            if (menu.getNama().equalsIgnoreCase(nama)) {
-                System.out.print("Masukkan harga baru: ");
-                double hargaBaru = scanner.nextDouble();
-                scanner.nextLine();  // clear the buffer
-
-                // Konfirmasi
-                System.out.print("Apakah Anda yakin ingin mengubah harga menu ini? (Ya/Tidak): ");
-                String konfirmasi = scanner.nextLine();
-                if (konfirmasi.equalsIgnoreCase("Ya")) {
-                    menu.setHarga(hargaBaru);
-                    System.out.println("Harga menu berhasil diubah.");
-                } else {
-                    System.out.println("Harga menu tidak jadi diubah.");
-                }
-                return;
-            }
+        MenuItem item = menuRestoran.cariMenu(nama);
+        if (item != null) {
+            System.out.print("Masukkan harga baru: ");
+            double hargaBaru = scanner.nextDouble();
+            scanner.nextLine(); // clear the buffer
+            item.setHarga(hargaBaru);
+            System.out.println("Harga menu berhasil diubah.");
+        } else {
+            System.out.println("Menu tidak ditemukan.");
         }
-        System.out.println("Menu tidak ditemukan.");
     }
 
     private static void hapusMenu(Scanner scanner) {
-        tampilkanMenu();
+        menuRestoran.tampilkanMenu();
         System.out.print("Masukkan nama menu yang ingin dihapus: ");
         String nama = scanner.nextLine();
 
-        for (Menu menu : menuList) {
-            if (menu.getNama().equalsIgnoreCase(nama)) {
-                // Konfirmasi
-                System.out.print("Apakah Anda yakin ingin menghapus menu ini? (Ya/Tidak): ");
-                String konfirmasi = scanner.nextLine();
-                if (konfirmasi.equalsIgnoreCase("Ya")) {
-                    menuList.remove(menu);
-                    System.out.println("Menu berhasil dihapus.");
-                } else {
-                    System.out.println("Menu tidak jadi dihapus.");
-                }
-                return;
+        MenuItem item = menuRestoran.cariMenu(nama);
+        if (item != null) {
+            menuRestoran.hapusItem(item);
+            System.out.println("Menu berhasil dihapus.");
+        } else {
+            System.out.println("Menu tidak ditemukan.");
+        }
+    }
+
+    private static double[] hitungDiskon(double totalBiaya) {
+        double totalDiskon = 0;
+        boolean adaMinuman = false;
+    
+        // Memeriksa apakah ada item minuman dalam pesanan pelanggan
+        for (MenuItem item : pesananPelanggan.getItemsDipesan()) {
+            if (item instanceof Minuman) {
+                adaMinuman = true;
+                break;
             }
         }
-        System.out.println("Menu tidak ditemukan.");
+    
+        // Jika total pesanan lebih dari 100.000, berikan diskon 10%
+        if (totalBiaya > 100000) {
+            totalDiskon = totalBiaya * 0.10; // Diskon 10%
+        } 
+        // Jika total pesanan antara 50.000 dan 100.000, beri potongan 1 item minuman jika ada pesanan minuman
+        else if (totalBiaya > 50000 && totalBiaya <= 100000) {
+            if (adaMinuman) {
+                // Mengambil harga item minuman pertama yang dipesan
+                for (MenuItem item : pesananPelanggan.getItemsDipesan()) {
+                    if (item instanceof Minuman) {
+                        totalDiskon = item.getHarga(); // Potongan sesuai harga minuman pertama
+                        break;
+                    }
+                }
+            }
+        }
+    
+        double totalSetelahDiskon = totalBiaya - totalDiskon;
+        return new double[]{totalDiskon, totalSetelahDiskon};
+    }
+    
+
+    private static void cetakStruk(double totalDenganPajakDanPelayanan, double totalBiaya, double totalDiskon) {
+        System.out.println("\n===== Struk Pesanan =====");
+        pesananPelanggan.tampilkanPesanan();
+        System.out.println("Total Biaya: Rp " + totalBiaya);
+        System.out.println("Total Diskon: Rp " + totalDiskon);
+        System.out.println("Total Setelah Diskon: Rp " + (totalBiaya - totalDiskon));
+        System.out.println("Pajak (10%): Rp " + (totalBiaya - totalDiskon) * 0.1);
+        System.out.println("Biaya Pelayanan: Rp 2000");
+        System.out.println("Total Bayar: Rp " + totalDenganPajakDanPelayanan);
+        System.out.println("==========================");
     }
 }

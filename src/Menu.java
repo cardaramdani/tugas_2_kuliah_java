@@ -1,27 +1,32 @@
-public class Menu {
-    private final String nama;
-    private double harga;
-    private final String kategori;
+import java.util.ArrayList;
 
-    public Menu(String nama, double harga, String kategori) {
-        this.nama = nama;
-        this.harga = harga;
-        this.kategori = kategori;
+class Menu {
+    final private ArrayList<MenuItem> menuItems;
+
+    public Menu() {
+        this.menuItems = new ArrayList<>();
     }
 
-    public String getNama() {
-        return nama;
+    public void tambahItem(MenuItem item) {
+        menuItems.add(item);
     }
 
-    public double getHarga() {
-        return harga;
+    public void tampilkanMenu() {
+        for (MenuItem item : menuItems) {
+            item.tampilMenu();
+        }
     }
 
-    public String getKategori() {
-        return kategori;
+    public MenuItem cariMenu(String nama) {
+        for (MenuItem item : menuItems) {
+            if (item.getNama().equalsIgnoreCase(nama)) {
+                return item;
+            }
+        }
+        return null;
     }
 
-    public void setHarga(double harga) {
-        this.harga = harga;
+    public void hapusItem(MenuItem item) {
+        menuItems.remove(item);
     }
 }
